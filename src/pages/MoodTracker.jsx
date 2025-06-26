@@ -50,12 +50,29 @@ const MoodTracker = () => {
     setLoading(true);
     try {
       const result = await GeminiService.analyzeMood(moodScore, moodDescription);
+      // Validate result structure
+      if (!result || typeof result !== 'object' || !result.study_suggestion || !result.intensity_adjustment || !result.motivational_message || !Array.isArray(result.recommended_activities)) {
+        toast.error('AI did not return valid mood analysis. Please try again or check your API key.');
+        setAnalysis({
+          study_suggestion: 'Take a light review session',
+          intensity_adjustment: 'Reduce intensity by 20%',
+          motivational_message: "It's okay to have off days. You're doing great!",
+          recommended_activities: ["Light reading", "Review notes", "Take a break"]
+        });
+        return;
+      }
       setAnalysis(result);
       updateMood(moodScore, moodDescription);
       toast.success('Mood updated! Check your personalized suggestions below.');
     } catch (error) {
       console.error('Error analyzing mood:', error);
-      toast.error('Error analyzing mood. Please check your API key.');
+      toast.error('Error analyzing mood. Please check your API key or try again.');
+      setAnalysis({
+        study_suggestion: 'Take a light review session',
+        intensity_adjustment: 'Reduce intensity by 20%',
+        motivational_message: "It's okay to have off days. You're doing great!",
+        recommended_activities: ["Light reading", "Review notes", "Take a break"]
+      });
     } finally {
       setLoading(false);
     }

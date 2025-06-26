@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import toast from 'react-hot-toast';
+import { GeminiService } from '../lib/gemini';
 
 const Settings = () => {
   const { 
@@ -45,6 +46,8 @@ const Settings = () => {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoBackup, setAutoBackup] = useState(true);
   const [theme, setTheme] = useState('light');
+  const [apiKeyTested, setApiKeyTested] = useState(null);
+  const [isTestingApiKey, setIsTestingApiKey] = useState(false);
 
   useEffect(() => {
     // Load settings from localStorage
@@ -330,7 +333,7 @@ const Settings = () => {
                           <input
                             type={showGeminiKey ? 'text' : 'password'}
                             value={geminiApiKey}
-                            onChange={(e) => setGeminiApiKey(e.target.value)}
+                            onChange={(e) => { setGeminiApiKey(e.target.value); setApiKeyTested(null); }}
                             placeholder="Enter your Gemini API key"
                             className="w-full p-3 pr-20 rounded-xl border transition-colors focus:outline-none focus:ring-2"
                             style={{
@@ -356,6 +359,27 @@ const Settings = () => {
                               </button>
                             )}
                           </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setIsTestingApiKey(true);
+                              setApiKeyTested(null);
+                              const valid = await GeminiService.testApiKey(geminiApiKey);
+                              setApiKeyTested(valid);
+                              setIsTestingApiKey(false);
+                              if (valid) toast.success('Gemini API key is valid!');
+                              else toast.error('Invalid Gemini API key.');
+                            }}
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                            disabled={isTestingApiKey || !geminiApiKey}
+                          >
+                            {isTestingApiKey ? 'Testing...' : 'Test API Key'}
+                          </button>
+                          {apiKeyTested === true && <Check className="w-5 h-5 text-green-600" />}
+                          {apiKeyTested === false && <EyeOff className="w-5 h-5 text-red-600" />}
                         </div>
                         
                         <button

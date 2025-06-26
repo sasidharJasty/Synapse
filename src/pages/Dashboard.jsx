@@ -59,10 +59,17 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const greeting = await GeminiService.generateGreeting(user.name || 'Student');
+      // Validate result structure
+      if (!greeting || typeof greeting !== 'string' || greeting.trim().length === 0) {
+        setGreeting('Welcome back! Ready to learn?');
+        toast.error('AI did not return a valid greeting. Please try again or check your API key.');
+        return;
+      }
       setGreeting(greeting);
     } catch (error) {
       console.error('Error generating greeting:', error);
-      setGreeting('Welcome back');
+      setGreeting('Welcome back! Ready to learn?');
+      toast.error('Error generating greeting. Please check your API key or try again.');
     } finally {
       setLoading(false);
     }
@@ -529,7 +536,7 @@ const Dashboard = () => {
       >
         <div className="absolute inset-0 bg-gradient-to-r from-synapse-500/5 to-primary-500/5"></div>
         <div className="relative z-10">
-          <div className="icon-container bg-gradient-to-r from-synapse-500 to-primary-500 mx-auto mb-6">
+          <div className="icon-container bg-gradient-to-r from-synapse-500 to-primary-500 h-fit w-fit p-2 rounded-full mx-auto mb-6">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <blockquote className="text-xl font-semibold mb-4" style={{ color: 'var(--color-sage-800)' }}>

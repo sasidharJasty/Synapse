@@ -90,6 +90,7 @@ const Navigation = () => {
   };
 
   const getMoodEmoji = (score) => {
+    if (!score) return '😊'; // Default emoji when no mood data
     if (score >= 8) return '😄';
     if (score >= 6) return '🙂';
     if (score >= 4) return '😐';
@@ -212,7 +213,7 @@ const Navigation = () => {
                 {user?.name || 'Student'}
               </p>
               <p className="text-xs" style={{ color: 'var(--color-sage-600)' }}>
-                {mood.current}/10
+                {mood.current ? `${mood.current}/10` : 'No mood recorded'}
               </p>
             </div>
           </div>
@@ -247,7 +248,7 @@ const Navigation = () => {
                   {user?.name || 'Student'}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--color-sage-600)' }}>
-                  Mood: {mood.current}/10
+                  Mood: {mood.current ? `${mood.current}/10` : 'Not recorded'}
                 </p>
               </div>
             </div>

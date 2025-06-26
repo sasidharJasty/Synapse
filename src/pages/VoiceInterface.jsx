@@ -77,6 +77,12 @@ const VoiceInterfacePage = () => {
     try {
       // Process the command with Gemini
       const result = await GeminiService.processVoiceCommand(text);
+      // Validate result structure
+      if (!result || typeof result !== 'object' || !result.action || !result.response || !result.parameters) {
+        toast.error('AI did not return a valid voice command response. Please try again or check your API key.');
+        setAiResponse("I'm sorry, I couldn't process that command. Please try again.");
+        return;
+      }
       setAiResponse(result.response);
       
       // Add to conversation history

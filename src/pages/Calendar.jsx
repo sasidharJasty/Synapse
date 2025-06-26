@@ -81,6 +81,12 @@ const Calendar = () => {
       `;
 
       const response = await GeminiService.organizeTasks(prompt);
+      // Validate response structure
+      if (!response || !Array.isArray(response.organized_tasks)) {
+        toast.error('AI did not return valid organized tasks. Please try again or check your API key.');
+        setOrganizedTasks([]);
+        return;
+      }
       const organized = response;
       setOrganizedTasks(organized);
     } catch (error) {

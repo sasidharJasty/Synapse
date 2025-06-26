@@ -97,9 +97,12 @@ function App() {
           {isAuthenticated && (
             <div className="flex">
               <Navigation />
-              <main className="flex-1 min-h-screen lg:ml-64" style={{ backgroundColor: 'var(--color-sage-50)' }}>
+              <main className="flex-1 min-h-screen w-full" >
                 {/* Mobile padding for header and bottom nav */}
                 <div className="lg:hidden pt-20 pb-24"></div>
+                
+                {/* Desktop padding */}
+                <div className="hidden lg:block pt-8 pb-8"></div>
                 
                 <Routes>
                   <Route path="/" element={

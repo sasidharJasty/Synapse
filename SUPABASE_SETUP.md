@@ -370,20 +370,229 @@ When deploying to production:
 3. **CORS Errors**: Add your domain to Supabase auth settings
 4. **Permission Denied**: Verify that your API keys have the correct permissions
 
-### Useful Queries
+### Database Schema Issues
+
+#### Mood Entries Issues
+If you're getting errors with mood tracking, ensure your `mood_entries` table has the correct schema:
 
 ```sql
--- Check user profiles
-SELECT * FROM profiles;
+-- Check if mood_entries table exists and has correct columns
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'mood_entries';
 
--- Check tasks for a specific user
-SELECT * FROM tasks WHERE user_id = 'user-uuid-here';
+-- If the table is missing or has wrong columns, recreate it:
+DROP TABLE IF EXISTS mood_entries;
 
--- Check RLS policies
-SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
-FROM pg_policies 
-WHERE schemaname = 'public';
+CREATE TABLE mood_entries (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  mood_score INTEGER CHECK (mood_score >= 1 AND mood_score <= 10) NOT NULL,
+  mood_label TEXT CHECK (mood_label IN ('excellent', 'good', 'neutral', 'bad', 'terrible')) NOT NULL,
+  notes TEXT,
+  activities TEXT[],
+  energy_level INTEGER CHECK (energy_level >= 1 AND energy_level <= 10),
+  stress_level INTEGER CHECK (stress_level >= 1 AND stress_level <= 10),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 ```
+
+#### Goals Issues
+If you're getting errors with goals, ensure your `goals` table has the correct schema:
+
+```sql
+-- Check if goals table exists and has correct columns
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'goals';
+
+-- If the table is missing or has wrong columns, recreate it:
+DROP TABLE IF EXISTS goals;
+
+CREATE TABLE goals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  target_date TIMESTAMP WITH TIME ZONE,
+  progress INTEGER CHECK (progress >= 0 AND progress <= 100) DEFAULT 0,
+  status TEXT CHECK (status IN ('not_started', 'in_progress', 'completed', 'paused')) DEFAULT 'not_started',
+  priority TEXT CHECK (priority IN ('low', 'medium', 'high')) DEFAULT 'medium',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+#### Tasks Issues
+If you're getting errors with tasks, ensure your `tasks` table has the correct schema:
+
+```sql
+-- Check if tasks table exists and has correct columns
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'tasks';
+
+-- If the table is missing or has wrong columns, recreate it:
+DROP TABLE IF EXISTS tasks;
+
+CREATE TABLE tasks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  priority TEXT CHECK (priority IN ('low', 'medium', 'high')) DEFAULT 'medium',
+  status TEXT CHECK (status IN ('pending', 'in_progress', 'completed')) DEFAULT 'pending',
+  difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')) DEFAULT 'medium',
+  estimated_duration INTEGER, -- in minutes
+  due_date TIMESTAMP WITH TIME ZONE,
+  tags TEXT[],
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### Environment Variables Issues
+
+1. **Check your `.env` file**:
+   ```bash
+   # Make sure these variables are set correctly
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_anon_key_here
+   VITE_GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+2. **Verify your Supabase credentials**:
+   - Go to your Supabase dashboard
+   - Navigate to Settings → API
+   - Copy the Project URL and anon public key
+   - Make sure they match your `.env` file
+
+3. **Restart your development server** after updating environment variables:
+   ```bash
+   npm run dev
+   ```
+
+### Authentication Issues
+
+1. **Check if user is authenticated**:
+   ```javascript
+   // In browser console
+   console.log('User:', supabase.auth.getUser());
+   console.log('Session:', supabase.auth.getSession());
+   ```
+
+2. **Verify RLS policies**:
+   ```sql
+   -- Check RLS policies for all tables
+   SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
+   FROM pg_policies 
+   WHERE schemaname = 'public';
+   ```
+
+3. **Test authentication manually**:
+   ```javascript
+   // In browser console
+   const { data, error } = await supabase.auth.signInWithPassword({
+     email: 'test@example.com',
+     password: 'password'
+   });
+   console.log('Auth result:', { data, error });
+   ```
+
+### Data Insertion Issues
+
+1. **Check table structure**:
+   ```sql
+   -- For any table, check its structure
+   \d table_name
+   
+   -- Or use this query
+   SELECT column_name, data_type, is_nullable, column_default
+   FROM information_schema.columns 
+   WHERE table_name = 'your_table_name'
+   ORDER BY ordinal_position;
+   ```
+
+2. **Test data insertion manually**:
+   ```sql
+   -- Test inserting a mood entry
+   INSERT INTO mood_entries (user_id, mood_score, mood_label, notes)
+   VALUES ('your-user-id', 8, 'good', 'Feeling great today!');
+   
+   -- Test inserting a goal
+   INSERT INTO goals (user_id, title, description, status)
+   VALUES ('your-user-id', 'Test Goal', 'Test Description', 'not_started');
+   ```
+
+3. **Check for constraint violations**:
+   ```sql
+   -- Check what constraints exist on a table
+   SELECT conname, contype, pg_get_constraintdef(oid) 
+   FROM pg_constraint 
+   WHERE conrelid = 'your_table_name'::regclass;
+   ```
+
+### Debugging Steps
+
+1. **Enable browser console logging**:
+   - Open browser developer tools
+   - Check the Console tab for error messages
+   - Look for Supabase-related errors
+
+2. **Check network requests**:
+   - Open browser developer tools
+   - Go to Network tab
+   - Look for failed requests to Supabase
+   - Check request/response details
+
+3. **Verify Supabase connection**:
+   ```javascript
+   // In browser console
+   console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+   console.log('Supabase client:', supabase);
+   
+   // Test a simple query
+   const { data, error } = await supabase
+     .from('profiles')
+     .select('*')
+     .limit(1);
+   console.log('Test query result:', { data, error });
+   ```
+
+### Common Error Messages and Solutions
+
+1. **"relation does not exist"**:
+   - The table doesn't exist in your database
+   - Run the CREATE TABLE statements from the setup guide
+
+2. **"permission denied"**:
+   - RLS policies are blocking the operation
+   - Check that the user is authenticated
+   - Verify RLS policies are correct
+
+3. **"column does not exist"**:
+   - The table schema doesn't match what the code expects
+   - Check the table structure and update it if needed
+
+4. **"invalid input syntax"**:
+   - Data type mismatch
+   - Check that you're sending the correct data types
+
+5. **"duplicate key value violates unique constraint"**:
+   - Trying to insert a record with a duplicate unique key
+   - Check your unique constraints
+
+### Getting Help
+
+If you're still having issues:
+
+1. **Check the Supabase documentation**: https://supabase.com/docs
+2. **Visit the Supabase community**: https://github.com/supabase/supabase/discussions
+3. **Review the Row Level Security guide**: https://supabase.com/docs/guides/auth/row-level-security
+4. **Check the app's console logs** for detailed error messages
+5. **Verify your database schema** matches the expected structure
 
 ## Security Best Practices
 

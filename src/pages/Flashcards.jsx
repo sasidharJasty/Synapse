@@ -48,31 +48,39 @@ const Flashcards = () => {
     setLoading(true);
     try {
       const result = await GeminiService.generateFlashcards(topic);
-      
-      if (result.flashcards && result.flashcards.length > 0) {
-        const newFlashcards = result.flashcards.map((fc, index) => ({
-          id: Date.now() + index,
-          question: fc.question,
-          answer: fc.answer,
-          topic: topic,
-          created: new Date().toISOString()
-        }));
-
-        setCurrentFlashcards(newFlashcards);
-        setQuizData(result.quiz);
-        setCurrentIndex(0);
-        setIsFlipped(false);
+      // Validate result structure
+      if (!result || !Array.isArray(result.flashcards) || result.flashcards.length === 0) {
+        toast.error('AI did not return valid flashcards. Please try again or check your API key.');
+        setCurrentFlashcards([]);
+        setQuizData(null);
         setStudyMode(false);
         setScore(0);
         setShowQuiz(false);
-        
-        toast.success(`Generated ${newFlashcards.length} flashcards for "${topic}"`);
-      } else {
-        toast.error('Could not generate flashcards. Please try again.');
+        return;
       }
+      const newFlashcards = result.flashcards.map((fc, index) => ({
+        id: Date.now() + index,
+        question: fc.question || 'No question',
+        answer: fc.answer || 'No answer',
+        topic: topic,
+        created: new Date().toISOString()
+      }));
+      setCurrentFlashcards(newFlashcards);
+      setQuizData(result.quiz || null);
+      setCurrentIndex(0);
+      setIsFlipped(false);
+      setStudyMode(false);
+      setScore(0);
+      setShowQuiz(false);
+      toast.success(`Generated ${newFlashcards.length} flashcards for "${topic}"`);
     } catch (error) {
       console.error('Error generating flashcards:', error);
-      toast.error('Error generating flashcards. Please check your API key.');
+      toast.error('Error generating flashcards. Please check your API key or try again.');
+      setCurrentFlashcards([]);
+      setQuizData(null);
+      setStudyMode(false);
+      setScore(0);
+      setShowQuiz(false);
     } finally {
       setLoading(false);
     }

@@ -156,11 +156,12 @@ const useStore = create(
           set({
             tasks: tasksResult.data || [],
             mood: {
-              current: moodResult.data && moodResult.data.length > 0 ? moodResult.data[0].value : null,
+              current: moodResult.data && moodResult.data.length > 0 ? moodResult.data[0].mood_score : null,
               history: moodResult.data ? moodResult.data.map(entry => ({
                 id: entry.id,
-                value: entry.value,
-                description: entry.description,
+                value: entry.mood_score,
+                description: entry.notes,
+                mood_label: entry.mood_label,
                 date: entry.created_at
               })) : []
             },
@@ -261,11 +262,12 @@ const useStore = create(
 
           set(state => ({
             mood: {
-              current: data.value,
+              current: data.mood_score,
               history: [...state.mood.history, { 
                 id: data.id,
-                value: data.value, 
-                description: data.description,
+                value: data.mood_score, 
+                description: data.notes,
+                mood_label: data.mood_label,
                 date: data.created_at 
               }]
             }
@@ -286,12 +288,13 @@ const useStore = create(
 
           set(state => ({
             mood: {
-              current: data.value,
+              current: data.mood_score,
               history: state.mood.history.map(entry => 
                 entry.id === entryId ? { 
                   ...entry, 
-                  value: data.value,
-                  description: data.description,
+                  value: data.mood_score,
+                  description: data.notes,
+                  mood_label: data.mood_label,
                   date: data.created_at 
                 } : entry
               )
@@ -352,6 +355,7 @@ const useStore = create(
                 id: data.id,
                 value: score, 
                 description: description,
+                mood_label: data.mood_label,
                 date: data.created_at 
               }]
             }
@@ -374,7 +378,13 @@ const useStore = create(
 
         try {
           const goalData = {
-            ...goal,
+            title: goal.title || goal,
+            description: goal.description,
+            category: goal.category,
+            target_date: goal.target_date,
+            progress: goal.progress || 0,
+            status: goal.status || 'not_started',
+            priority: goal.priority || 'medium',
             user_id: user.id,
             created_at: new Date().toISOString()
           };
@@ -428,6 +438,17 @@ const useStore = create(
           toast.error(error.message || 'Failed to delete goal');
           return { success: false, error };
         }
+      },
+
+      // Helper functions for goals
+      getCompletedGoals: () => {
+        const { goals } = get();
+        return goals.filter(goal => goal.status === 'completed');
+      },
+
+      getPendingGoals: () => {
+        const { goals } = get();
+        return goals.filter(goal => goal.status !== 'completed').slice(0, 3);
       },
 
       // Flashcard actions
@@ -671,16 +692,6 @@ const useStore = create(
           const taskDate = new Date(task.dueDate || task.created_at).toDateString();
           return taskDate === today;
         });
-      },
-
-      getPendingGoals: () => {
-        const { goals } = get();
-        return goals.filter(goal => !goal.completed);
-      },
-
-      getCompletedGoals: () => {
-        const { goals } = get();
-        return goals.filter(goal => goal.completed);
       },
 
       getMoodTrend: () => {

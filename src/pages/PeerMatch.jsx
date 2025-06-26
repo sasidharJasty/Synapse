@@ -70,10 +70,17 @@ const PeerMatch = () => {
         subjects.join(', '),
         strengths
       );
+      // Validate result structure
+      if (!icebreakerText || typeof icebreakerText !== 'string' || icebreakerText.trim().length === 0) {
+        setIcebreaker("Hey! I'm also studying similar subjects. Want to study together?");
+        toast.error('AI did not return a valid icebreaker. Please try again or check your API key.');
+        return;
+      }
       setIcebreaker(icebreakerText);
     } catch (error) {
       console.error('Error generating icebreaker:', error);
       setIcebreaker("Hey! I'm also studying similar subjects. Want to study together?");
+      toast.error('Error generating icebreaker. Please check your API key or try again.');
     }
   };
 

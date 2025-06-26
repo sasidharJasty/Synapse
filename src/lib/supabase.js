@@ -4,7 +4,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Missing Supabase environment variables. Please check your .env file.');
+  console.error('Missing Supabase environment variables. Please check your .env file.');
+  console.error('Required variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -14,6 +15,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true
   }
 });
+
+// Helper function to convert mood score to mood label
+const getMoodLabel = (score) => {
+  if (score >= 9) return 'excellent';
+  if (score >= 7) return 'good';
+  if (score >= 5) return 'neutral';
+  if (score >= 3) return 'bad';
+  return 'terrible';
+};
+
+// Debug function to log Supabase errors
+const logSupabaseError = (operation, error) => {
+  console.error(`Supabase ${operation} error:`, error);
+  if (error.code) {
+    console.error(`Error code: ${error.code}`);
+  }
+  if (error.message) {
+    console.error(`Error message: ${error.message}`);
+  }
+  if (error.details) {
+    console.error(`Error details: ${error.details}`);
+  }
+};
 
 // Auth helpers
 export const auth = {
@@ -182,23 +206,74 @@ export const db = {
 
     // Create a new mood entry
     create: async (moodEntry) => {
-      const { data, error } = await supabase
-        .from('mood_entries')
-        .insert(moodEntry)
-        .select()
-        .single();
-      return { data, error };
+      try {
+        // Map the incoming data to match the database schema
+        const entryData = {
+          user_id: moodEntry.user_id,
+          mood_score: moodEntry.value || moodEntry.mood_score,
+          mood_label: moodEntry.mood_label || getMoodLabel(moodEntry.value || moodEntry.mood_score),
+          notes: moodEntry.description || moodEntry.notes,
+          activities: moodEntry.activities || [],
+          energy_level: moodEntry.energy_level,
+          stress_level: moodEntry.stress_level,
+          created_at: moodEntry.created_at || new Date().toISOString()
+        };
+
+        console.log('Creating mood entry with data:', entryData);
+
+        const { data, error } = await supabase
+          .from('mood_entries')
+          .insert(entryData)
+          .select()
+          .single();
+
+        if (error) {
+          logSupabaseError('mood entry create', error);
+          throw error;
+        }
+
+        console.log('Mood entry created successfully:', data);
+        return { data, error: null };
+      } catch (error) {
+        logSupabaseError('mood entry create', error);
+        return { data: null, error };
+      }
     },
 
     // Update a mood entry
     update: async (entryId, updates) => {
-      const { data, error } = await supabase
-        .from('mood_entries')
-        .update(updates)
-        .eq('id', entryId)
-        .select()
-        .single();
-      return { data, error };
+      try {
+        // Map the updates to match the database schema
+        const updateData = {
+          mood_score: updates.value || updates.mood_score,
+          mood_label: updates.mood_label || getMoodLabel(updates.value || updates.mood_score),
+          notes: updates.description || updates.notes,
+          activities: updates.activities,
+          energy_level: updates.energy_level,
+          stress_level: updates.stress_level,
+          updated_at: new Date().toISOString()
+        };
+
+        console.log('Updating mood entry with data:', updateData);
+
+        const { data, error } = await supabase
+          .from('mood_entries')
+          .update(updateData)
+          .eq('id', entryId)
+          .select()
+          .single();
+
+        if (error) {
+          logSupabaseError('mood entry update', error);
+          throw error;
+        }
+
+        console.log('Mood entry updated successfully:', data);
+        return { data, error: null };
+      } catch (error) {
+        logSupabaseError('mood entry update', error);
+        return { data: null, error };
+      }
     },
 
     // Delete a mood entry

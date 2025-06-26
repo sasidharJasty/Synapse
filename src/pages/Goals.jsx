@@ -48,25 +48,29 @@ const Goals = () => {
     
     try {
       const result = await GeminiService.breakdownGoal(goal.title);
-      setBreakdownResult(result);
-      
-      // Add tasks to the store
-      if (result.tasks && result.tasks.length > 0) {
-        result.tasks.forEach(task => {
-          addTask({
-            title: task.title,
-            description: task.description,
-            estimatedTime: task.estimated_time,
-            priority: task.priority,
-            goalId: goal.id
-          });
-        });
-        
-        toast.success(`Goal broken down into ${result.tasks.length} tasks!`);
+      // Validate result structure
+      if (!result || !Array.isArray(result.tasks) || result.tasks.length === 0) {
+        toast.error('AI did not return valid tasks. Please try again or check your API key.');
+        setBreakdownResult(null);
+        return;
       }
+      setBreakdownResult(result);
+      // Add tasks to the store
+      result.tasks.forEach(task => {
+        addTask({
+          title: task.title || 'Untitled',
+          description: task.description || '',
+          estimated_duration: task.estimated_time || 30,
+          priority: task.priority || 'medium',
+          due_date: task.due_date || null,
+          tags: task.tags || []
+        });
+      });
+      toast.success(`Goal broken down into ${result.tasks.length} tasks!`);
     } catch (error) {
       console.error('Error breaking down goal:', error);
-      toast.error('Error breaking down goal. Please check your API key.');
+      toast.error('Error breaking down goal. Please check your API key or try again.');
+      setBreakdownResult(null);
     } finally {
       setLoading(false);
     }
@@ -75,8 +79,9 @@ const Goals = () => {
   const toggleGoalCompletion = (goalId) => {
     const goal = goals.find(g => g.id === goalId);
     if (goal) {
-      updateGoal(goalId, { completed: !goal.completed });
-      toast.success(goal.completed ? 'Goal reactivated!' : 'Goal completed! 🎉');
+      const newStatus = goal.status === 'completed' ? 'in_progress' : 'completed';
+      updateGoal(goalId, { status: newStatus });
+      toast.success(goal.status === 'completed' ? 'Goal reactivated!' : 'Goal completed! 🎉');
     }
   };
 
@@ -92,7 +97,7 @@ const Goals = () => {
   const getProgressPercentage = (goal) => {
     // This would need to be calculated based on completed tasks
     // For now, return a placeholder
-    return goal.completed ? 100 : 0;
+    return goal.status === 'completed' ? 100 : goal.progress || 0;
   };
 
   return (
@@ -196,7 +201,7 @@ const Goals = () => {
                 <div className="flex items-center space-x-4 text-sm text-gray-600">
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
-                    {new Date(goal.createdAt).toLocaleDateString()}
+                    {new Date(goal.created_at).toLocaleDateString()}
                   </div>
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 mr-1" />

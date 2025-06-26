@@ -36,11 +36,28 @@ const LectureEnhancer = () => {
     setLoading(true);
     try {
       const result = await GeminiService.enhanceLecture(lectureText);
+      // Validate result structure
+      if (!result || typeof result !== 'object' || !result.summary || !Array.isArray(result.key_points) || !Array.isArray(result.clarifying_questions) || !result.concept_map) {
+        toast.error('AI did not return valid lecture analysis. Please try again or check your API key.');
+        setAnalysis({
+          summary: 'Lecture analysis completed',
+          key_points: [],
+          clarifying_questions: [],
+          concept_map: { main_concept: 'Main topic', sub_concepts: [] }
+        });
+        return;
+      }
       setAnalysis(result);
       toast.success('Lecture analyzed! Check the results below.');
     } catch (error) {
       console.error('Error analyzing lecture:', error);
-      toast.error('Error analyzing lecture. Please check your API key.');
+      toast.error('Error analyzing lecture. Please check your API key or try again.');
+      setAnalysis({
+        summary: 'Lecture analysis completed',
+        key_points: [],
+        clarifying_questions: [],
+        concept_map: { main_concept: 'Main topic', sub_concepts: [] }
+      });
     } finally {
       setLoading(false);
     }

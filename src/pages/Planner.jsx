@@ -72,29 +72,31 @@ const Planner = () => {
         selectedGoals.map(g => g.title),
         energyLevel
       );
-
-      if (result.schedule && result.schedule.length > 0) {
-        setGeneratedSchedule(result.schedule);
-        updateSchedule(result.schedule);
-        
-        // Add tasks to the store
-        result.schedule.forEach(item => {
-          addTask({
-            title: item.activity,
-            description: item.mood_adjustment,
-            estimatedTime: item.duration,
-            priority: item.intensity === 'high' ? 'high' : item.intensity === 'medium' ? 'medium' : 'low',
-            scheduledTime: item.time
-          });
-        });
-
-        toast.success('Schedule generated! Check your tasks below.');
-      } else {
-        toast.error('Could not generate schedule. Please try again.');
+      // Validate result structure
+      if (!result || !Array.isArray(result.schedule) || result.schedule.length === 0) {
+        toast.error('AI did not return a valid schedule. Please try again or check your API key.');
+        setGeneratedSchedule([]);
+        updateSchedule([]);
+        return;
       }
+      setGeneratedSchedule(result.schedule);
+      updateSchedule(result.schedule);
+      // Add tasks to the store
+      result.schedule.forEach(item => {
+        addTask({
+          title: item.activity || 'Untitled',
+          description: item.mood_adjustment || '',
+          estimatedTime: item.duration || 60,
+          priority: item.intensity === 'high' ? 'high' : item.intensity === 'medium' ? 'medium' : 'low',
+          scheduledTime: item.time || ''
+        });
+      });
+      toast.success('Schedule generated! Check your tasks below.');
     } catch (error) {
       console.error('Error generating schedule:', error);
-      toast.error('Error generating schedule. Please check your API key.');
+      toast.error('Error generating schedule. Please check your API key or try again.');
+      setGeneratedSchedule([]);
+      updateSchedule([]);
     } finally {
       setLoading(false);
     }
