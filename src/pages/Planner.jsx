@@ -86,9 +86,13 @@ const Planner = () => {
         addTask({
           title: item.activity || 'Untitled',
           description: item.mood_adjustment || '',
-          estimatedTime: item.duration || 60,
+          estimated_time: item.duration || 60,
           priority: item.intensity === 'high' ? 'high' : item.intensity === 'medium' ? 'medium' : 'low',
-          scheduledTime: item.time || ''
+          scheduledTime: item.time || '',
+          started: false,
+          completed: false,
+          timeSpent: 0,
+          completedAt: null
         });
       });
       toast.success('Schedule generated! Check your tasks below.');
@@ -396,8 +400,8 @@ const Planner = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {task.estimatedTime && (
-                    <span className="text-sm text-gray-500">{task.estimatedTime}min</span>
+                  {task.estimated_time && (
+                    <span className="text-sm text-gray-500">{task.estimated_time}min</span>
                   )}
                   {!task.completed && !task.started && (
                     <button

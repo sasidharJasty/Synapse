@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, Type } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export class GeminiService {
   static getApiKey() {
@@ -11,43 +11,44 @@ export class GeminiService {
       throw new Error('Gemini API key not found. Please add your API key in Settings.');
     }
     
-    const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const ai = new GoogleGenAI({ apiKey });
+    return ai;
   }
 
   static async generateFlashcards(topic) {
     try {
-      const model = this.getModel();
+      const ai = this.getModel();
       
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: `Generate flashcards for the topic '${topic}'.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
-              summary: { type: Type.STRING },
+              summary: { type: "string" },
               flashcards: {
-                type: Type.ARRAY,
+                type: "array",
                 items: {
-                  type: Type.OBJECT,
+                  type: "object",
                   properties: {
-                    question: { type: Type.STRING },
-                    answer: { type: Type.STRING }
+                    question: { type: "string" },
+                    answer: { type: "string" }
                   },
                   propertyOrdering: ["question", "answer"]
                 }
               },
               quiz: {
-                type: Type.OBJECT,
+                type: "object",
                 properties: {
-                  question: { type: Type.STRING },
+                  question: { type: "string" },
                   options: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING }
+                    type: "array",
+                    items: { type: "string" }
                   },
-                  correct: { type: Type.STRING },
-                  explanation: { type: Type.STRING }
+                  correct: { type: "string" },
+                  explanation: { type: "string" }
                 },
                 propertyOrdering: ["question", "options", "correct", "explanation"]
               }
@@ -56,10 +57,7 @@ export class GeminiService {
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error generating flashcards:', error);
       throw error;
@@ -68,43 +66,45 @@ export class GeminiService {
 
   static async generateSchedule(mood, goals, energyLevel) {
     try {
-      const model = this.getModel();
-      
-      const result = await model.generateContent({
-        contents: `Create a daily study schedule based on mood (${mood}/10), energy level (${energyLevel}/10), and goals: ${goals.join(', ')}.`,
+      const ai = this.getModel();
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `Create a daily study schedule for the following goals: ${goals.join(', ')}. The user mood is ${mood}/10 and energy level is ${energyLevel}/10. 
+- If the total estimated time for all tasks exceeds 6 hours, split the tasks over multiple days, aiming for no more than 6 hours of study per day.
+- Include at least one meditation session and several short breaks (5-10 minutes) between study blocks each day.
+- For each scheduled item, specify the time, activity, duration (in minutes), intensity (low/medium/high), and a mood_adjustment tip.
+- Meditation and breaks should be clearly labeled as such in the activity field.
+Return the schedule as an array, and also provide recommendations and a motivational quote.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
               schedule: {
-                type: Type.ARRAY,
+                type: "array",
                 items: {
-                  type: Type.OBJECT,
+                  type: "object",
                   properties: {
-                    time: { type: Type.STRING },
-                    activity: { type: Type.STRING },
-                    duration: { type: Type.INTEGER },
-                    intensity: { type: Type.STRING, enum: ["low", "medium", "high"] },
-                    mood_adjustment: { type: Type.STRING }
+                    time: { type: "string" },
+                    activity: { type: "string" },
+                    duration: { type: "integer" },
+                    intensity: { type: "string", enum: ["low", "medium", "high"] },
+                    mood_adjustment: { type: "string" }
                   },
                   propertyOrdering: ["time", "activity", "duration", "intensity", "mood_adjustment"]
                 }
               },
               recommendations: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
+                type: "array",
+                items: { type: "string" }
               },
-              motivational_quote: { type: Type.STRING }
+              motivational_quote: { type: "string" }
             },
             propertyOrdering: ["schedule", "recommendations", "motivational_quote"]
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error generating schedule:', error);
       throw error;
@@ -113,39 +113,37 @@ export class GeminiService {
 
   static async breakdownGoal(goal) {
     try {
-      const model = this.getModel();
+      const ai = this.getModel();
       
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: `Break down the goal "${goal}" into 5 actionable daily tasks.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
               tasks: {
-                type: Type.ARRAY,
+                type: "array",
                 items: {
-                  type: Type.OBJECT,
+                  type: "object",
                   properties: {
-                    title: { type: Type.STRING },
-                    description: { type: Type.STRING },
-                    estimated_time: { type: Type.INTEGER },
-                    priority: { type: Type.STRING, enum: ["high", "medium", "low"] }
+                    title: { type: "string" },
+                    description: { type: "string" },
+                    estimated_time: { type: "integer" },
+                    priority: { type: "string", enum: ["high", "medium", "low"] }
                   },
                   propertyOrdering: ["title", "description", "estimated_time", "priority"]
                 }
               },
-              motivational_quote: { type: Type.STRING },
-              total_estimated_time: { type: Type.INTEGER }
+              motivational_quote: { type: "string" },
+              total_estimated_time: { type: "integer" }
             },
             propertyOrdering: ["tasks", "motivational_quote", "total_estimated_time"]
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error breaking down goal:', error);
       throw error;
@@ -154,31 +152,29 @@ export class GeminiService {
 
   static async analyzeMood(moodScore, moodDescription) {
     try {
-      const model = this.getModel();
+      const ai = this.getModel();
       
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: `Based on mood score ${moodScore}/10 and description "${moodDescription}", provide study suggestions.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
-              study_suggestion: { type: Type.STRING },
-              intensity_adjustment: { type: Type.STRING },
-              motivational_message: { type: Type.STRING },
+              study_suggestion: { type: "string" },
+              intensity_adjustment: { type: "string" },
+              motivational_message: { type: "string" },
               recommended_activities: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
+                type: "array",
+                items: { type: "string" }
               }
             },
             propertyOrdering: ["study_suggestion", "intensity_adjustment", "motivational_message", "recommended_activities"]
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error analyzing mood:', error);
       throw error;
@@ -187,31 +183,32 @@ export class GeminiService {
 
   static async enhanceLecture(lectureText) {
     try {
-      const model = this.getModel();
+      const ai = this.getModel();
       
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: `Analyze this lecture text and provide a summary, key points, clarifying questions, and a concept map. Lecture text: ${lectureText}`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
-              summary: { type: Type.STRING },
+              summary: { type: "string" },
               key_points: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
+                type: "array",
+                items: { type: "string" }
               },
               clarifying_questions: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
+                type: "array",
+                items: { type: "string" }
               },
               concept_map: {
-                type: Type.OBJECT,
+                type: "object",
                 properties: {
-                  main_concept: { type: Type.STRING },
+                  main_concept: { type: "string" },
                   sub_concepts: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING }
+                    type: "array",
+                    items: { type: "string" }
                   }
                 },
                 propertyOrdering: ["main_concept", "sub_concepts"]
@@ -221,10 +218,7 @@ export class GeminiService {
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error enhancing lecture:', error);
       throw error;
@@ -233,7 +227,7 @@ export class GeminiService {
 
   static async generateGreeting(userName) {
     try {
-      const model = this.getModel();
+      const ai = this.getModel();
       
       const timeOfDay = new Date().getHours();
       let timeGreeting = '';
@@ -242,19 +236,17 @@ export class GeminiService {
       else if (timeOfDay < 17) timeGreeting = 'Good afternoon';
       else timeGreeting = 'Good evening';
 
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: `Generate a personalized greeting for ${userName || 'Student'}. Time of day: ${timeGreeting}. Return a friendly, motivational greeting that encourages studying and learning. Keep it under 100 characters.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.STRING
+            type: "string"
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error generating greeting:', error);
       // Fallback greeting
@@ -271,21 +263,19 @@ export class GeminiService {
 
   static async generateIcebreaker(subject, userStrengths) {
     try {
-      const model = this.getModel();
+      const ai = this.getModel();
       
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: `Generate an icebreaker message for a study partner based on subject: ${subject} and user strengths: ${userStrengths.join(', ')}. Return a friendly, engaging message to start a conversation.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.STRING
+            type: "string"
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error generating icebreaker:', error);
       return "Hey! I'm also studying this subject. Want to study together?";
@@ -294,36 +284,34 @@ export class GeminiService {
 
   static async processVoiceCommand(command) {
     try {
-      const model = this.getModel();
+      const ai = this.getModel();
       
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: `Process this voice command and return a structured response. Command: "${command}"`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
-              action: { type: Type.STRING, enum: ["add_task", "add_goal", "check_schedule", "analyze_mood", "generate_flashcards", "unknown", "error"] },
+              action: { type: "string", enum: ["add_task", "add_goal", "check_schedule", "analyze_mood", "generate_flashcards", "unknown", "error"] },
               parameters: {
-                type: Type.OBJECT,
+                type: "object",
                 properties: {
-                  title: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  priority: { type: Type.STRING, enum: ["high", "medium", "low"] },
-                  due_date: { type: Type.STRING, format: "date" }
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  priority: { type: "string", enum: ["high", "medium", "low"] },
+                  due_date: { type: "string", format: "date" }
                 },
                 propertyOrdering: ["title", "description", "priority", "due_date"]
               },
-              response: { type: Type.STRING }
+              response: { type: "string" }
             },
             propertyOrdering: ["action", "parameters", "response"]
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error processing voice command:', error);
       return {
@@ -336,41 +324,39 @@ export class GeminiService {
 
   static async organizeTasks(prompt) {
     try {
-      const model = this.getModel();
+      const ai = this.getModel();
       
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
               organized_tasks: {
-                type: Type.ARRAY,
+                type: "array",
                 items: {
-                  type: Type.OBJECT,
+                  type: "object",
                   properties: {
-                    title: { type: Type.STRING },
-                    start_time: { type: Type.STRING },
-                    reasoning: { type: Type.STRING }
+                    title: { type: "string" },
+                    start_time: { type: "string" },
+                    reasoning: { type: "string" }
                   },
                   propertyOrdering: ["title", "start_time", "reasoning"]
                 }
               },
               recommendations: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
+                type: "array",
+                items: { type: "string" }
               },
-              motivational_quote: { type: Type.STRING }
+              motivational_quote: { type: "string" }
             },
             propertyOrdering: ["organized_tasks", "recommendations", "motivational_quote"]
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
-      
-      return JSON.parse(text);
+      return JSON.parse(result.text);
     } catch (error) {
       console.error('Error organizing tasks:', error);
       throw error;
@@ -381,23 +367,22 @@ export class GeminiService {
     try {
       const key = apiKey || this.getApiKey();
       if (!key) return false;
-      const genAI = new GoogleGenerativeAI(key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const result = await model.generateContent({
+      const ai = new GoogleGenAI({ apiKey });
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents: "Say 'hello' as JSON: {\"hello\":true}",
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
-              hello: { type: Type.BOOLEAN }
+              hello: { type: "boolean" }
             },
             propertyOrdering: ["hello"]
           }
         }
       });
-      const response = await result.response;
-      const text = response.text();
+      const text = result.text;
       try {
         const parsed = JSON.parse(text);
         return parsed.hello === true;
@@ -406,6 +391,35 @@ export class GeminiService {
       }
     } catch {
       return false;
+    }
+  }
+
+  static async askLectureQuestion(lectureText, question) {
+    try {
+      const ai = this.getModel();
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `Given the following lecture text, answer the user's question as accurately as possible.\nLecture: ${lectureText}\nQuestion: ${question}`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              answer: { type: "string" },
+              supporting_points: {
+                type: "array",
+                items: { type: "string" }
+              },
+              confidence: { type: "number" }
+            },
+            propertyOrdering: ["answer", "supporting_points", "confidence"]
+          }
+        }
+      });
+      return JSON.parse(result.text);
+    } catch (error) {
+      console.error('Error answering lecture question:', error);
+      return { answer: 'Error generating answer.', supporting_points: [], confidence: 0 };
     }
   }
 } 

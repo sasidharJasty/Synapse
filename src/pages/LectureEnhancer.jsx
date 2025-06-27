@@ -13,6 +13,9 @@ import useStore from '../store/useStore';
 import { GeminiService } from '../lib/gemini';
 import VoiceInterface from '../utils/voiceInterface';
 import toast from 'react-hot-toast';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const LectureEnhancer = () => {
   const [lectureText, setLectureText] = useState('');
@@ -21,6 +24,9 @@ const LectureEnhancer = () => {
   const [voiceInterface, setVoiceInterface] = useState(null);
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [showGraph, setShowGraph] = useState(false);
 
   useState(() => {
     const vi = new VoiceInterface();
@@ -98,11 +104,28 @@ const LectureEnhancer = () => {
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setLectureText(e.target.result);
-      };
-      reader.readAsText(file);
+      if (file.type === 'application/pdf') {
+        // PDF parsing
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const typedarray = new Uint8Array(e.target.result);
+          const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+          let text = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(item => item.str).join(' ') + '\n';
+          }
+          setLectureText(text);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setLectureText(e.target.result);
+        };
+        reader.readAsText(file);
+      }
     }
   };
 
@@ -135,6 +158,24 @@ Sub-concepts: ${analysis.concept_map.sub_concepts.join(', ')}
     URL.revokeObjectURL(url);
   };
 
+  const askQuestion = async () => {
+    if (!lectureText.trim() || !question.trim()) {
+      toast.error('Please upload a lecture or enter text and a question.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await GeminiService.askLectureQuestion(lectureText, question);
+      setAnswer(result.answer || 'No answer found.');
+      toast.success('Answer generated!');
+    } catch (error) {
+      setAnswer('Error generating answer.');
+      toast.error('Error generating answer.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -154,11 +195,11 @@ Sub-concepts: ${analysis.concept_map.sub_concepts.join(', ')}
           {/* File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Lecture File (Optional)
+              Upload Lecture File (Optional, PDF or Text)
             </label>
             <input
               type="file"
-              accept=".txt,.md"
+              accept=".txt,.md,.pdf"
               onChange={handleFileUpload}
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-synapse-50 file:text-synapse-700 hover:file:bg-synapse-100"
             />
@@ -227,6 +268,30 @@ Sub-concepts: ${analysis.concept_map.sub_concepts.join(', ')}
         </div>
       </div>
 
+      {/* Ask Questions Section */}
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-2 flex items-center"><MessageSquare className="w-5 h-5 mr-2" />Ask Questions About Lecture</h2>
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={question}
+            onChange={e => setQuestion(e.target.value)}
+            placeholder="Type your question about the lecture..."
+            className="flex-1 px-3 py-2 border rounded-lg"
+          />
+          <button
+            onClick={askQuestion}
+            className="px-4 py-2 rounded-lg bg-synapse-500 text-white font-semibold hover:bg-synapse-600"
+            disabled={loading}
+          >Ask</button>
+        </div>
+        {answer && (
+          <div className="bg-sage-50 p-3 rounded-lg border mt-2 text-gray-800">
+            <strong>Answer:</strong> {answer}
+          </div>
+        )}
+      </div>
+
       {/* Analysis Results */}
       {analysis && (
         <div className="space-y-6">
@@ -272,27 +337,17 @@ Sub-concepts: ${analysis.concept_map.sub_concepts.join(', ')}
 
           {/* Concept Map */}
           <div className="card">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <Map className="w-5 h-5 mr-2" />
-              Concept Map
-            </h2>
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
-              <div className="text-center mb-6">
-                <div className="inline-block bg-white px-6 py-3 rounded-lg shadow-md border border-purple-300">
-                  <h3 className="font-semibold text-purple-800 text-lg">{analysis.concept_map.main_concept}</h3>
-                  <p className="text-sm text-gray-600">Main Concept</p>
-                </div>
+            <h2 className="text-lg font-semibold mb-2 flex items-center"><Map className="w-5 h-5 mr-2" />Concept Map</h2>
+            <button
+              onClick={() => setShowGraph(g => !g)}
+              className="px-4 py-2 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 mb-2"
+            >{showGraph ? 'Hide' : 'Show'} Concept Net</button>
+            {showGraph && analysis && analysis.concept_map && (
+              <div id="concept-graph" className="w-full h-96 bg-white rounded-lg border mt-2 flex items-center justify-center">
+                {/* Placeholder for D3/vis.js net visualization */}
+                <span className="text-gray-400">[Concept Net Visualization Here]</span>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {analysis.concept_map.sub_concepts.map((concept, index) => (
-                  <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
-                    <h4 className="font-medium text-gray-800">{concept}</h4>
-                    <p className="text-sm text-gray-600">Sub-concept</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Download Button */}
