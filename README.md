@@ -229,6 +229,49 @@ If you encounter any issues or have questions:
 3. Verify that voice features are supported in your browser
 4. Create an issue in the repository
 
+## Troubleshooting
+
+### Voice Assistant Issues
+
+**"AI did not return a valid voice command response"**
+
+This error typically occurs when:
+1. **No API Key**: You haven't added a Gemini API key
+2. **Invalid API Key**: Your API key is incorrect or expired
+3. **API Quota Exceeded**: You've reached your daily API limit
+4. **Network Issues**: Connection problems
+
+**Solutions:**
+1. **Get a free API key**: Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. **Add your API key**: Go to Settings → API Keys → Add your Gemini API key
+3. **Test your API key**: Use the "Test API Key" button in Settings
+4. **Check console**: Open browser dev tools (F12) and check for detailed error messages
+
+**Common API Key Issues:**
+- Make sure you're using the correct API key from Google AI Studio (not Google Cloud Console)
+- Ensure the API key has access to Gemini models
+- Check if you've exceeded your daily quota (free tier has limits)
+
+### Development Issues
+
+**Tailwind CSS not working:**
+- Make sure you're using Vite 6+ and compatible Tailwind packages
+- Check that `postcss.config.js` is properly configured
+- Verify `index.css` has the correct Tailwind imports
+
+**Voice recognition not working:**
+- Ensure you're using HTTPS (required for microphone access)
+- Check browser permissions for microphone access
+- Try refreshing the page and allowing microphone permissions
+
+### Getting Help
+
+If you're still experiencing issues:
+1. Check the browser console for error messages
+2. Verify your API key is working in the Settings page
+3. Try the test functions in the Setup modal
+4. Check the [Vite troubleshooting guide](https://vitejs.dev/guide/troubleshooting)
+
 ---
 
 **Made with ❤️ for students everywhere**

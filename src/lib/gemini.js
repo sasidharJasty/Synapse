@@ -288,12 +288,23 @@ Return the schedule as an array, and also provide recommendations and a motivati
       
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Process this voice command and return a structured response. Command: "${command}"`,
+        contents: `Process this voice command and return a structured response. Analyze the command and determine the user's intent and appropriate action.
+
+Command: "${command}"
+
+Instructions:
+- Determine the intent: mood, goals, planner, flashcards, motivation, or general
+- Choose the appropriate action: add_task, add_goal, check_schedule, analyze_mood, generate_flashcards, unknown, or error
+- Provide a helpful response that acknowledges the command
+- Extract any relevant parameters like title, description, priority, or due_date if mentioned
+
+Return a JSON response with the specified structure.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: "object",
             properties: {
+              intent: { type: "string", enum: ["mood", "goals", "planner", "flashcards", "motivation", "general"] },
               action: { type: "string", enum: ["add_task", "add_goal", "check_schedule", "analyze_mood", "generate_flashcards", "unknown", "error"] },
               parameters: {
                 type: "object",
@@ -301,20 +312,37 @@ Return the schedule as an array, and also provide recommendations and a motivati
                   title: { type: "string" },
                   description: { type: "string" },
                   priority: { type: "string", enum: ["high", "medium", "low"] },
-                  due_date: { type: "string", format: "date" }
+                  due_date: { type: "string", format: "date-time" }
                 },
                 propertyOrdering: ["title", "description", "priority", "due_date"]
               },
               response: { type: "string" }
             },
-            propertyOrdering: ["action", "parameters", "response"]
+            propertyOrdering: ["intent", "action", "parameters", "response"]
           }
         }
       });
-      return JSON.parse(result.text);
+      
+      const parsedResult = JSON.parse(result.text);
+      
+      // Validate the response structure
+      if (!parsedResult || typeof parsedResult !== 'object') {
+        throw new Error('Invalid response structure');
+      }
+      
+      // Ensure all required fields are present
+      const validatedResult = {
+        intent: parsedResult.intent || 'general',
+        action: parsedResult.action || 'unknown',
+        parameters: parsedResult.parameters || {},
+        response: parsedResult.response || "I understand your request. How can I help you further?"
+      };
+      
+      return validatedResult;
     } catch (error) {
       console.error('Error processing voice command:', error);
       return {
+        intent: "general",
         action: "error",
         parameters: {},
         response: "Sorry, I couldn't process your command. Please try again."
@@ -366,8 +394,12 @@ Return the schedule as an array, and also provide recommendations and a motivati
   static async testApiKey(apiKey) {
     try {
       const key = apiKey || this.getApiKey();
-      if (!key) return false;
-      const ai = new GoogleGenAI({ apiKey });
+      if (!key) {
+        console.error('No API key provided');
+        return false;
+      }
+      
+      const ai = new GoogleGenAI({ apiKey: key });
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: "Say 'hello' as JSON: {\"hello\":true}",
@@ -382,14 +414,31 @@ Return the schedule as an array, and also provide recommendations and a motivati
           }
         }
       });
+      
       const text = result.text;
       try {
         const parsed = JSON.parse(text);
-        return parsed.hello === true;
-      } catch {
+        const isValid = parsed.hello === true;
+        console.log('API key test result:', isValid ? 'SUCCESS' : 'FAILED', parsed);
+        return isValid;
+      } catch (parseError) {
+        console.error('Failed to parse API response:', parseError, 'Raw response:', text);
         return false;
       }
-    } catch {
+    } catch (error) {
+      console.error('API key test error:', error);
+      
+      // Provide more specific error information
+      if (error.message?.includes('API_KEY_INVALID')) {
+        console.error('Invalid API key format');
+      } else if (error.message?.includes('PERMISSION_DENIED')) {
+        console.error('API key doesn\'t have permission to access Gemini');
+      } else if (error.message?.includes('QUOTA_EXCEEDED')) {
+        console.error('API quota exceeded');
+      } else if (error.message?.includes('MODEL_NOT_FOUND')) {
+        console.error('Model not found - check if gemini-2.5-flash is available');
+      }
+      
       return false;
     }
   }

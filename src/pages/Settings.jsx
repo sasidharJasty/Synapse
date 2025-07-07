@@ -157,6 +157,33 @@ const Settings = () => {
     window.open('https://aistudio.google.com/app/apikey', '_blank');
   };
 
+  const testApiKey = async () => {
+    if (!geminiApiKey) {
+      toast.error('Please enter an API key first');
+      return;
+    }
+
+    setIsTestingApiKey(true);
+    setApiKeyTested(null);
+
+    try {
+      const isValid = await GeminiService.testApiKey(geminiApiKey);
+      setApiKeyTested(isValid);
+      
+      if (isValid) {
+        toast.success('API key is valid and working!');
+      } else {
+        toast.error('API key is invalid or not working');
+      }
+    } catch (error) {
+      console.error('API key test error:', error);
+      setApiKeyTested(false);
+      toast.error('Failed to test API key. Please check your connection.');
+    } finally {
+      setIsTestingApiKey(false);
+    }
+  };
+
   const tabs = [
     { id: 'general', label: 'General', icon: SettingsIcon },
     { id: 'api', label: 'API Keys', icon: Key },
@@ -364,15 +391,7 @@ const Settings = () => {
                         <div className="flex items-center gap-2 mt-2">
                           <button
                             type="button"
-                            onClick={async () => {
-                              setIsTestingApiKey(true);
-                              setApiKeyTested(null);
-                              const valid = await GeminiService.testApiKey(geminiApiKey);
-                              setApiKeyTested(valid);
-                              setIsTestingApiKey(false);
-                              if (valid) toast.success('Gemini API key is valid!');
-                              else toast.error('Invalid Gemini API key.');
-                            }}
+                            onClick={testApiKey}
                             className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                             disabled={isTestingApiKey || !geminiApiKey}
                           >

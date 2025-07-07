@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, X, Volume2, VolumeX } from 'lucide-react';
 import useStore from '../store/useStore';
 import VoiceInterface from '../utils/voiceInterface';
+import { GeminiService } from '../lib/gemini';
 
 const VoiceAssistant = () => {
-  const { mood, addMoodEntry } = useStore();
-  const [isListening, setIsListening] = useState(false);
+  const { mood, addMoodEntry, voiceEnabled, setVoiceEnabled, isListening, setIsListening } = useStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
@@ -18,38 +18,36 @@ const VoiceAssistant = () => {
     voiceInterface.current = new VoiceInterface();
     
     // Check if voice is enabled
-    const voiceEnabled = localStorage.getItem('voice-enabled') === 'true';
     if (voiceEnabled) {
       setIsMuted(false);
     }
-  }, []);
+  }, [voiceEnabled]);
 
   const handleVoiceCommand = async () => {
     if (!voiceInterface.current) return;
 
     if (isListening) {
       // Stop listening
+      voiceInterface.current.stopListening();
       setIsListening(false);
       setIsProcessing(true);
       
       try {
-        const result = await voiceInterface.current.stopListening();
-        if (result.success) {
-          setTranscript(result.transcript);
-          
-          // Process the command
-          const processedResult = await voiceInterface.current.processVoiceCommand(result.transcript);
-          setResponse(processedResult.response);
-          
-          // Update mood if detected
-          if (processedResult.mood) {
-            addMoodEntry({
-              mood: processedResult.mood,
-              energy: processedResult.energy || mood.energy,
-              timestamp: new Date().toISOString(),
-              source: 'voice'
-            });
-          }
+        // Process the command using Gemini
+        const processedResult = await GeminiService.processVoiceCommand(transcript);
+        setResponse(processedResult.response);
+        
+        // Update mood if detected
+        if (processedResult.action === 'analyze_mood') {
+          const moodScore = 7; // Default mood score
+          const moodAnalysis = await GeminiService.analyzeMood(moodScore, transcript);
+          addMoodEntry({
+            mood: moodScore,
+            energy: mood.energy,
+            timestamp: new Date().toISOString(),
+            source: 'voice',
+            description: transcript
+          });
         }
       } catch (error) {
         console.error('Voice processing error:', error);
@@ -64,7 +62,55 @@ const VoiceAssistant = () => {
       setResponse('');
       
       try {
-        await voiceInterface.current.startListening();
+        const success = voiceInterface.current.startListening(
+          (transcript) => {
+            setTranscript(transcript);
+            // Auto-stop after getting transcript
+            voiceInterface.current.stopListening();
+            setIsListening(false);
+            setIsProcessing(true);
+            
+            // Process the command
+            GeminiService.processVoiceCommand(transcript)
+              .then((processedResult) => {
+                setResponse(processedResult.response);
+                
+                // Update mood if detected
+                if (processedResult.action === 'analyze_mood') {
+                  const moodScore = 7; // Default mood score
+                  return GeminiService.analyzeMood(moodScore, transcript);
+                }
+              })
+              .then((moodAnalysis) => {
+                if (moodAnalysis) {
+                  addMoodEntry({
+                    mood: 7,
+                    energy: mood.energy,
+                    timestamp: new Date().toISOString(),
+                    source: 'voice',
+                    description: transcript
+                  });
+                }
+              })
+              .catch((error) => {
+                console.error('Voice processing error:', error);
+                setResponse('Sorry, I had trouble processing that. Could you try again?');
+              })
+              .finally(() => {
+                setIsProcessing(false);
+              });
+          },
+          (error) => {
+            console.error('Voice recognition error:', error);
+            setIsListening(false);
+            setResponse('Sorry, I couldn\'t understand that. Please try again.');
+          }
+        );
+        
+        if (!success) {
+          setIsListening(false);
+          setResponse('Sorry, I couldn\'t start listening. Please check your microphone permissions.');
+        }
       } catch (error) {
         console.error('Voice recognition error:', error);
         setIsListening(false);
@@ -75,15 +121,7 @@ const VoiceAssistant = () => {
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
-    localStorage.setItem('voice-enabled', (!isMuted).toString());
-    
-    if (voiceInterface.current) {
-      if (isMuted) {
-        voiceInterface.current.enableVoice();
-      } else {
-        voiceInterface.current.disableVoice();
-      }
-    }
+    setVoiceEnabled(!isMuted);
   };
 
   const closeAssistant = () => {
@@ -92,6 +130,9 @@ const VoiceAssistant = () => {
     setTranscript('');
     setResponse('');
     setIsProcessing(false);
+    if (voiceInterface.current) {
+      voiceInterface.current.stopListening();
+    }
   };
 
   return (

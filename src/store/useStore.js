@@ -23,6 +23,10 @@ const useStore = create(
       studySessions: [],
       peerMatches: [],
 
+      // Voice interface state
+      voiceEnabled: localStorage.getItem('voice-enabled') === 'true',
+      isListening: false,
+
       // Gemini API key management
       geminiApiKey: localStorage.getItem('gemini-api-key') || '',
 
@@ -719,6 +723,16 @@ const useStore = create(
         localStorage.removeItem('gemini-api-key');
         set({ geminiApiKey: '' });
         toast.success('API key cleared');
+      },
+
+      // Voice interface actions
+      setVoiceEnabled: (enabled) => {
+        localStorage.setItem('voice-enabled', enabled.toString());
+        set({ voiceEnabled: enabled });
+      },
+
+      setIsListening: (listening) => {
+        set({ isListening: listening });
       },
     }),
     {

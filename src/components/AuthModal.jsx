@@ -267,19 +267,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signin' }) => {
                 <div className="flex-1 border-t" style={{ borderColor: 'var(--color-sage-200)' }} />
               </div>
 
-              {/* Google Sign In */}
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ 
-                  borderColor: 'var(--color-sage-200)',
-                  color: 'var(--color-sage-700)'
-                }}
-              >
-                <Chrome className="w-5 h-5" />
-                <span className="font-medium">Continue with Google</span>
-              </button>
+
 
               {/* Toggle Mode */}
               <div className="mt-6 text-center">

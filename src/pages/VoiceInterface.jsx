@@ -27,7 +27,8 @@ const VoiceInterfacePage = () => {
     addTask,
     setVoiceEnabled,
     voiceEnabled,
-    isListening
+    isListening,
+    setIsListening
   } = useStore();
 
   const [voiceInterface, setVoiceInterface] = useState(null);
@@ -55,12 +56,14 @@ const VoiceInterfacePage = () => {
 
     setTranscript('');
     setAiResponse('');
+    setIsListening(true);
 
     voiceInterface.startListening(
       handleVoiceCommand,
       (error) => {
         console.error('Voice recognition error:', error);
         toast.error('Voice recognition error. Please try again.');
+        setIsListening(false);
       }
     );
   };
@@ -68,6 +71,7 @@ const VoiceInterfacePage = () => {
   const stopListening = () => {
     if (voiceInterface) {
       voiceInterface.stopListening();
+      setIsListening(false);
     }
   };
 
@@ -75,14 +79,31 @@ const VoiceInterfacePage = () => {
     setTranscript(text);
     
     try {
+      // Check if API key is available
+      const apiKey = localStorage.getItem('gemini-api-key') || '';
+      if (!apiKey) {
+        setAiResponse("I need a Gemini API key to process voice commands. Please add your API key in Settings.");
+        toast.error('Gemini API key not found. Please add it in Settings.');
+        return;
+      }
+
       // Process the command with Gemini
       const result = await GeminiService.processVoiceCommand(text);
+      
       // Validate result structure
-      if (!result || typeof result !== 'object' || !result.action || !result.response || !result.parameters) {
-        toast.error('AI did not return a valid voice command response. Please try again or check your API key.');
+      if (!result || typeof result !== 'object') {
+        toast.error('AI did not return a valid response. Please try again.');
         setAiResponse("I'm sorry, I couldn't process that command. Please try again.");
         return;
       }
+
+      // Check for required fields
+      if (!result.response) {
+        toast.error('AI response is missing required fields. Please try again.');
+        setAiResponse("I'm sorry, I couldn't process that command. Please try again.");
+        return;
+      }
+
       setAiResponse(result.response);
       
       // Add to conversation history
@@ -91,8 +112,8 @@ const VoiceInterfacePage = () => {
         timestamp: new Date().toISOString(),
         userInput: text,
         aiResponse: result.response,
-        intent: result.intent,
-        action: result.action
+        intent: result.intent || 'general',
+        action: result.action || 'unknown'
       };
       
       setConversationHistory(prev => [newEntry, ...prev.slice(0, 9)]); // Keep last 10 entries
@@ -138,11 +159,25 @@ const VoiceInterfacePage = () => {
       
     } catch (error) {
       console.error('Error processing voice command:', error);
-      const errorResponse = "I'm sorry, I couldn't process that command. Please try again.";
-      setAiResponse(errorResponse);
+      
+      // Provide more specific error messages
+      let errorMessage = "I'm sorry, I couldn't process that command. Please try again.";
+      
+      if (error.message?.includes('API key')) {
+        errorMessage = "Please check your Gemini API key in Settings.";
+        toast.error('Invalid or missing API key');
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage = "Network error. Please check your internet connection.";
+        toast.error('Network error');
+      } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
+        errorMessage = "API quota exceeded. Please try again later.";
+        toast.error('API quota exceeded');
+      }
+      
+      setAiResponse(errorMessage);
       
       if (audioEnabled) {
-        speakText(errorResponse);
+        speakText(errorMessage);
       }
     }
   };
@@ -220,6 +255,39 @@ const VoiceInterfacePage = () => {
         </h1>
         <p className="text-gray-600">Talk to Synapse and get intelligent responses to your academic needs</p>
       </div>
+
+      {/* API Key Warning */}
+      {!localStorage.getItem('gemini-api-key') && (
+        <div className="card bg-yellow-50 border-yellow-200">
+          <div className="flex items-start space-x-3">
+            <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-white text-sm font-bold">!</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-yellow-800 mb-2">API Key Required</h3>
+              <p className="text-yellow-700 mb-3">
+                To use the voice assistant, you need a Gemini API key. This enables AI-powered responses to your voice commands.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="https://makersuite.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium"
+                >
+                  Get Free API Key
+                </a>
+                <button
+                  onClick={() => window.location.href = '/settings?tab=api'}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                >
+                  Add to Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Voice Controls */}
       <div className="card">
