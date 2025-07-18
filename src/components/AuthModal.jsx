@@ -120,13 +120,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signin' }) => {
                     }
                   </p>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                  style={{ color: 'var(--color-sage-600)' }}
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                {/* No close button here */}
               </div>
             </div>
 

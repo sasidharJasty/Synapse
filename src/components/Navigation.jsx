@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -19,14 +19,64 @@ import {
   Zap,
   Clock,
   TrendingUp,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Star
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { toast } from 'react-toastify';
 
 const Navigation = () => {
   const location = useLocation();
-  const { user, mood, signOut } = useStore();
+  const { user, mood, signOut, addMoodEntry } = useStore();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  // Add state for sidebar collapse and favorites
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [favorites, setFavorites] = useState(() => {
+    // Load from localStorage or default to empty
+    try {
+      return JSON.parse(localStorage.getItem('nav-favorites')) || [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Add state for mini progress (simulate for now)
+  const todayTasks = [/* get from store or props */];
+  const completedTasks = todayTasks.filter(t => t.completed).length;
+  const progress = todayTasks.length ? completedTasks / todayTasks.length : 0;
+
+  // Add quick mood log
+  const [loggingMood, setLoggingMood] = useState(false);
+  const quickMoods = [
+    { score: 10, emoji: '😄' },
+    { score: 7, emoji: '🙂' },
+    { score: 5, emoji: '��' },
+    { score: 3, emoji: '😔' },
+    { score: 1, emoji: '😢' },
+  ];
+  const handleQuickMood = async (score) => {
+    if (!user) {
+      toast.error('Please sign in to track mood');
+      setLoggingMood(false);
+      return;
+    }
+    await addMoodEntry({ mood_score: score, notes: 'Quick log', mood_label: undefined });
+    setLoggingMood(false);
+  };
+
+  // Add to favorites
+  const toggleFavorite = (path) => {
+    let newFavs;
+    if (favorites.includes(path)) {
+      newFavs = favorites.filter(f => f !== path);
+    } else {
+      newFavs = [...favorites, path];
+    }
+    setFavorites(newFavs);
+    localStorage.setItem('nav-favorites', JSON.stringify(newFavs));
+  };
 
   // Primary navigation items (always visible in bottom tabs)
   const primaryNavItems = [
@@ -72,13 +122,6 @@ const Navigation = () => {
       icon: Mic, 
       description: 'Voice-controlled study assistant',
       category: 'Study Tools'
-    },
-    { 
-      path: '/settings', 
-      label: 'Settings', 
-      icon: Settings, 
-      description: 'App preferences and account',
-      category: 'System'
     },
   ];
 
@@ -183,6 +226,25 @@ const Navigation = () => {
     );
   };
 
+  // Add state for profile dropdown
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef();
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setProfileMenuOpen(false);
+      }
+    }
+    if (profileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [profileMenuOpen]);
+
   return (
     <>
       {/* Mobile Header */}
@@ -220,98 +282,122 @@ const Navigation = () => {
         </div>
       </div>
 
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block lg:w-64 lg:min-h-screen">
-        <div className="fixed top-0 left-0 w-64 h-full bg-white border-r shadow-sm z-40" style={{ borderColor: 'var(--color-sage-200)' }}>
+      {/* Desktop Sidebar (glassy, collapsible) */}
+      <div className={`hidden lg:block ${sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'} lg:min-h-screen`}>
+        <div className={`fixed top-0 left-0 h-full z-40 transition-all duration-300 bg-white/70 backdrop-blur-xl shadow-xl border-r border-sage-100 ${sidebarCollapsed ? 'w-20' : 'w-64'} rounded-tr-3xl rounded-br-3xl`}>
+          {/* Collapse Toggle */}
+          <button onClick={() => setSidebarCollapsed(v => !v)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-sage-100">
+            {sidebarCollapsed ? <ChevronRight /> : <ChevronLeft />}
+          </button>
           {/* Header */}
-          <div className="p-6 border-b" style={{ borderColor: 'var(--color-sage-200)' }}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-synapse-500)' }}>
-                <Brain className="w-7 h-7 text-white" />
-              </div>
+          <div className={`p-6 border-b border-sage-100 flex items-center gap-3 mb-4 ${sidebarCollapsed ? 'justify-center' : ''}`}> 
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-synapse-500">
+              <Brain className="w-7 h-7 text-white" />
+            </div>
+            {!sidebarCollapsed && (
               <div>
-                <h1 className="text-xl font-bold" style={{ color: 'var(--color-sage-800)' }}>
-                  Synapse
-                </h1>
-                <p className="text-sm" style={{ color: 'var(--color-sage-600)' }}>
-                  AI Study Assistant
-                </p>
+                <h1 className="text-xl font-bold text-sage-800">Synapse</h1>
+                <p className="text-sm text-sage-600">AI Study Assistant</p>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--color-sage-50)' }}>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--color-synapse-100)' }}>
-                <span className="text-2xl">{getMoodEmoji(mood.current)}</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium" style={{ color: 'var(--color-sage-800)' }}>
-                  {user?.name || 'Student'}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--color-sage-600)' }}>
-                  Mood: {mood.current ? `${mood.current}/10` : 'Not recorded'}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
-
-          {/* Navigation Links */}
+          {/* User Info + Quick Mood Log */}
+          {/* In the sidebar, replace the user info section with a more visible profile card */}
+          {!sidebarCollapsed && user && (
+            <div className="relative">
+              <button
+                className="flex items-center gap-3 p-3 mb-3 bg-white/80 rounded-xl shadow border border-sage-100 w-full hover:bg-synapse-50 transition"
+                onClick={() => setProfileMenuOpen((v) => !v)}
+                aria-haspopup="true"
+                aria-expanded={profileMenuOpen}
+              >
+                <div className="w-10 h-10 rounded-full bg-synapse-100 flex items-center justify-center text-xl font-bold">
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <span>{user.name ? user.name[0] : 'S'}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="text-sm font-semibold text-sage-800 truncate">{user.name || 'Student'}</div>
+                  <div className="text-xs text-sage-500 truncate">{user.email}</div>
+                </div>
+                <svg className={`w-4 h-4 ml-1 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {profileMenuOpen && (
+                <div ref={profileMenuRef} className="absolute left-0 top-full mt-2 w-48 bg-white border border-sage-100 rounded-xl shadow-lg z-50 py-2 animate-fade-in">
+                  <a href="/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-synapse-50 text-sage-700">
+                    <Settings className="w-5 h-5 text-synapse-600" />
+                    <span className="font-medium">Settings</span>
+                  </a>
+                  <div className="my-1 border-t border-sage-100" />
+                  <button onClick={signOut} className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl transition-all group hover:bg-red-50 text-red-600">
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-medium">Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          {/* Mini Progress Bar */}
+          {!sidebarCollapsed && (
+            <div className="px-6 mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-sage-600">Today's Progress</span>
+                <span className="text-xs text-sage-800 font-bold">{Math.round(progress * 100)}%</span>
+              </div>
+              <div className="w-full h-2 bg-sage-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-synapse-500 rounded-full transition-all" style={{ width: `${progress * 100}%` }} />
+              </div>
+            </div>
+          )}
+          {/* Favorites Section */}
+          {!sidebarCollapsed && favorites.length > 0 && (
+            <div className="px-4 mb-2">
+              <h4 className="text-xs font-semibold text-sage-700 mb-2">Favorites</h4>
+              <div className="space-y-1">
+                {secondaryNavItems.filter(i => favorites.includes(i.path)).map(item => (
+                  <Link key={item.path} to={item.path} className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-synapse-50 transition-all">
+                    <item.icon className="w-5 h-5 text-synapse-500" />
+                    <span className="font-medium">{item.label}</span>
+                    <button onClick={e => { e.preventDefault(); toggleFavorite(item.path); }} className="ml-auto p-1 rounded hover:bg-sage-100" title="Remove from favorites">
+                      <X className="w-4 h-4 text-sage-400" />
+                    </button>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Navigation Links (primary/secondary) */}
           <nav className="p-4 space-y-2">
             {primaryNavItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
-                  isActive(item.path) ? 'shadow-sm' : 'hover:bg-gray-50'
-                }`}
-                style={{
-                  backgroundColor: isActive(item.path) ? 'var(--color-synapse-50)' : 'transparent',
-                  color: isActive(item.path) ? 'var(--color-synapse-700)' : 'var(--color-sage-700)'
-                }}
-              >
-                <item.icon className="w-5 h-5" style={{ 
-                  color: isActive(item.path) ? 'var(--color-synapse-600)' : 'var(--color-sage-500)' 
-                }} />
-                <span className="font-medium">{item.label}</span>
+              <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-4 py-3 rounded-xl relative group transition-all ${isActive(item.path) ? 'bg-synapse-100/60' : 'hover:bg-sage-50'}`}
+                style={{ color: isActive(item.path) ? 'var(--color-synapse-700)' : 'var(--color-sage-700)' }}>
+                <item.icon className="w-5 h-5" style={{ color: isActive(item.path) ? 'var(--color-synapse-600)' : 'var(--color-sage-500)' }} />
+                {!sidebarCollapsed && <span className="font-medium">{item.label}</span>}
+                {isActive(item.path) && (
+                  <motion.div layoutId="activeNav" className="absolute inset-0 rounded-xl bg-synapse-100/60 -z-10" transition={{ type: 'spring', duration: 0.5 }} />
+                )}
               </Link>
             ))}
           </nav>
-
-          {/* Divider */}
-          <div className="my-4 border-t" style={{ borderColor: 'var(--color-sage-200)' }} />
-
-          {/* Secondary Navigation */}
+          <div className="my-4 border-t border-sage-100" />
           <div className="space-y-1">
             {secondaryNavItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
-                  isActive(item.path) ? 'shadow-sm' : 'hover:bg-gray-50'
-                }`}
-                style={{
-                  backgroundColor: isActive(item.path) ? 'var(--color-synapse-50)' : 'transparent',
-                  color: isActive(item.path) ? 'var(--color-synapse-700)' : 'var(--color-sage-700)'
-                }}
-              >
-                <item.icon className="w-5 h-5" style={{ 
-                  color: isActive(item.path) ? 'var(--color-synapse-600)' : 'var(--color-sage-500)' 
-                }} />
-                <span className="font-medium">{item.label}</span>
+              <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-4 py-3 rounded-xl relative group transition-all ${isActive(item.path) ? 'bg-synapse-100/60' : 'hover:bg-sage-50'}`}
+                style={{ color: isActive(item.path) ? 'var(--color-synapse-700)' : 'var(--color-sage-700)' }}>
+                <item.icon className="w-5 h-5" style={{ color: isActive(item.path) ? 'var(--color-synapse-600)' : 'var(--color-sage-500)' }} />
+                {!sidebarCollapsed && <span className="font-medium">{item.label}</span>}
+                <button onClick={e => { e.preventDefault(); toggleFavorite(item.path); }} className="ml-auto p-1 rounded hover:bg-sage-100" title={favorites.includes(item.path) ? 'Remove from favorites' : 'Add to favorites'}>
+                  {favorites.includes(item.path) ? <X className="w-4 h-4 text-sage-400" /> : <Star className="w-4 h-4 text-synapse-400" />}
+                </button>
+                {isActive(item.path) && (
+                  <motion.div layoutId="activeNav" className="absolute inset-0 rounded-xl bg-synapse-100/60 -z-10" transition={{ type: 'spring', duration: 0.5 }} />
+                )}
               </Link>
             ))}
           </div>
-
-          {/* Sign Out */}
-          <div className="mt-auto pt-4">
-            <button
-              onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-red-50"
-              style={{ color: 'var(--color-red-600)' }}
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Sign Out</span>
-            </button>
-          </div>
+          
         </div>
       </div>
 
@@ -401,6 +487,20 @@ const Navigation = () => {
           )}
         </AnimatePresence>
       </div>
+      {/* In mobile nav, add a profile avatar button (bottom right corner, floating) */}
+      {user && (
+        <button
+          className="fixed bottom-20 right-4 z-50 w-12 h-12 rounded-full bg-synapse-100 flex items-center justify-center shadow-lg border border-synapse-200"
+          onClick={() => window.location.href = '/settings'}
+          title="Profile & Settings"
+        >
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+          ) : (
+            <span className="text-xl font-bold text-synapse-600">{user.name ? user.name[0] : 'S'}</span>
+          )}
+        </button>
+      )}
     </>
   );
 };

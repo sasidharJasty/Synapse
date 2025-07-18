@@ -76,132 +76,139 @@ const SetupModal = ({ isOpen, onComplete }) => {
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
-            {/* API Key Setup */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                Set Up Gemini API Key (Optional)
+          <div className="p-6 pb-0">
+            <div className="bg-gradient-to-r from-synapse-50 to-primary-50 border border-synapse-100 rounded-xl p-5 mb-6 shadow-sm">
+              <h3 className="text-lg font-bold text-synapse-700 mb-2 flex items-center gap-2">
+                <Brain className="w-5 h-5 text-synapse-500" />
+                Welcome to Synapse: Your AI Study Companion
               </h3>
-              <p className="text-gray-600 mb-4">
-                To use AI features like goal breakdown and mood analysis, you'll need a Gemini API key.
+              <p className="text-sage-800 mb-2">
+                <b>Synapse</b> is an all-in-one AI-powered platform designed to help you study smarter, stay organized, and boost your academic wellbeing. Here’s what you can do:
               </p>
-              
-              <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-medium text-blue-800">Optional but Recommended</h4>
-                      <p className="text-sm text-blue-700 mt-1">
-                        The API key enables AI-powered features. You can skip this step and add it later in settings.
-                      </p>
-                    </div>
+              <ul className="list-disc pl-6 text-sage-700 mb-2">
+                <li><b>AI Flashcards:</b> Instantly generate and study smart flashcards for any topic.</li>
+                <li><b>Planner & Calendar:</b> Organize your tasks, goals, and study sessions with AI-generated schedules.</li>
+                <li><b>Mood & Wellness:</b> Track your mood, get personalized study suggestions, and log your wellbeing in seconds.</li>
+                <li><b>Lecture Enhancer:</b> Summarize, analyze, and ask questions about your lectures using AI.</li>
+                <li><b>Peer Match:</b> Find and connect with study partners.</li>
+                <li><b>Voice Assistant:</b> Use voice commands to interact with your study tools hands-free.</li>
+              </ul>
+              <p className="text-sage-700 mb-2">
+                <b>How to get the most out of Synapse:</b>
+              </p>
+              <ul className="list-disc pl-6 text-sage-700 mb-2">
+                <li>Log your mood daily for personalized suggestions and insights.</li>
+                <li>Use the planner to break down big goals into actionable steps.</li>
+                <li>Pin your favorite features in the navigation for quick access.</li>
+                <li>Try the quick mood log in the sidebar for instant tracking.</li>
+                <li>Explore the More menu for advanced tools and settings.</li>
+              </ul>
+              <p className="text-xs text-sage-500">Tip: You can always revisit this setup guide from the Settings page.</p>
+            </div>
+          </div>
+
+          
+
+          {/* Database Setup Verification */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Verify Database Setup
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Let's make sure your Supabase database is properly configured.
+            </p>
+
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-800">Database Setup Required</h4>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Make sure you've followed the setup guide in SUPABASE_SETUP.md and created all required tables.
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Database Setup Verification */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                Verify Database Setup
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Let's make sure your Supabase database is properly configured.
-              </p>
+              <div className="flex space-x-4">
+                <button
+                  onClick={runDebugTests}
+                  disabled={isDebugging}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {isDebugging ? 'Running Tests...' : 'Run Setup Tests'}
+                </button>
+                <button
+                  onClick={runDataTests}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Test Data Operations
+                </button>
+              </div>
 
-              <div className="space-y-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-medium text-yellow-800">Database Setup Required</h4>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Make sure you've followed the setup guide in SUPABASE_SETUP.md and created all required tables.
-                      </p>
+              {debugResults && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-800 mb-3">Test Results:</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      {debugResults.environment ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      )}
+                      <span className="text-sm">Environment Variables</span>
                     </div>
-                  </div>
-                </div>
-
-                <div className="flex space-x-4">
-                  <button
-                    onClick={runDebugTests}
-                    disabled={isDebugging}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    {isDebugging ? 'Running Tests...' : 'Run Setup Tests'}
-                  </button>
-                  <button
-                    onClick={runDataTests}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Test Data Operations
-                  </button>
-                </div>
-
-                {debugResults && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-gray-800 mb-3">Test Results:</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        {debugResults.environment ? (
+                    <div className="flex items-center space-x-2">
+                      {debugResults.connection ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      )}
+                      <span className="text-sm">Database Connection</span>
+                    </div>
+                    {Object.entries(debugResults.tables).map(([table, exists]) => (
+                      <div key={table} className="flex items-center space-x-2">
+                        {exists ? (
                           <CheckCircle className="w-4 h-4 text-green-600" />
                         ) : (
                           <AlertCircle className="w-4 h-4 text-red-600" />
                         )}
-                        <span className="text-sm">Environment Variables</span>
+                        <span className="text-sm capitalize">{table.replace('_', ' ')} Table</span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {debugResults.connection ? (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-red-600" />
-                        )}
-                        <span className="text-sm">Database Connection</span>
-                      </div>
-                      {Object.entries(debugResults.tables).map(([table, exists]) => (
-                        <div key={table} className="flex items-center space-x-2">
-                          {exists ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <AlertCircle className="w-4 h-4 text-red-600" />
-                          )}
-                          <span className="text-sm capitalize">{table.replace('_', ' ')} Table</span>
-                        </div>
-                      ))}
-                    </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <Settings className="w-5 h-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-medium text-blue-800">Need Help?</h4>
-                      <p className="text-sm text-blue-700 mt-1">
-                        If tests fail, check the browser console for detailed error messages and refer to the troubleshooting guide in SUPABASE_SETUP.md
-                      </p>
-                    </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Settings className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-800">Need Help?</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      If tests fail, check the browser console for detailed error messages and refer to the troubleshooting guide in SUPABASE_SETUP.md
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-between pt-4">
-              <button
-                onClick={onComplete}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Skip for now
-              </button>
-              <button
-                onClick={onComplete}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Complete Setup
-              </button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex justify-between pt-4">
+            <button
+              onClick={onComplete}
+              className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Skip for now
+            </button>
+            <button
+              onClick={onComplete}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Complete Setup
+            </button>
           </div>
         </motion.div>
       </motion.div>

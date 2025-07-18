@@ -738,7 +738,10 @@ const useStore = create(
     {
       name: 'synapse-store',
       partialize: (state) => ({
-        // Only persist non-sensitive data locally
+        // Persist auth state as well as non-sensitive data
+        user: state.user,
+        session: state.session,
+        isAuthenticated: state.isAuthenticated,
         tasks: state.tasks,
         mood: state.mood,
         goals: state.goals,

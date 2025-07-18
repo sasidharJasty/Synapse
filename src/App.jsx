@@ -30,12 +30,17 @@ function App() {
   }, [checkAuth]);
 
   useEffect(() => {
-    // Check if setup is complete (only if authenticated)
+    // Only show setup modal after authentication and not when navigating to /settings or using dropdown
     if (isAuthenticated) {
       const setupComplete = localStorage.getItem('setup-complete');
-      if (!setupComplete) {
+      // Only show if not on /settings
+      if (!setupComplete && window.location.pathname !== '/settings') {
         setShowSetup(true);
+      } else {
+        setShowSetup(false);
       }
+    } else {
+      setShowSetup(false);
     }
   }, [isAuthenticated]);
 
