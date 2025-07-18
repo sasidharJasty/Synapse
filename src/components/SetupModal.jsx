@@ -8,18 +8,8 @@ import { GeminiService } from '../lib/gemini';
 
 const SetupModal = ({ isOpen, onComplete }) => {
   const { geminiApiKey, setGeminiApiKey } = useStore();
-  const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
   const [debugResults, setDebugResults] = useState(null);
   const [isDebugging, setIsDebugging] = useState(false);
-  const [apiKeyTested, setApiKeyTested] = useState(null);
-  const [isTestingApiKey, setIsTestingApiKey] = useState(false);
-
-  const handleSave = () => {
-    setGeminiApiKey(localApiKey);
-    localStorage.setItem('setup-complete', 'true');
-    onComplete();
-    toast.success('Setup completed successfully!');
-  };
 
   const runDebugTests = async () => {
     setIsDebugging(true);
@@ -97,50 +87,6 @@ const SetupModal = ({ isOpen, onComplete }) => {
               </p>
               
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Gemini API Key
-                  </label>
-                  <input
-                    type="password"
-                    value={localApiKey}
-                    onChange={(e) => { setLocalApiKey(e.target.value); setApiKeyTested(null); }}
-                    placeholder="Enter your Gemini API key"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <div className="flex items-center gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setIsTestingApiKey(true);
-                        setApiKeyTested(null);
-                        const valid = await GeminiService.testApiKey(localApiKey);
-                        setApiKeyTested(valid);
-                        setIsTestingApiKey(false);
-                        if (valid) toast.success('Gemini API key is valid!');
-                        else toast.error('Invalid Gemini API key.');
-                      }}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                      disabled={isTestingApiKey || !localApiKey}
-                    >
-                      {isTestingApiKey ? 'Testing...' : 'Test API Key'}
-                    </button>
-                    {apiKeyTested === true && <CheckCircle className="w-5 h-5 text-green-600" />}
-                    {apiKeyTested === false && <AlertCircle className="w-5 h-5 text-red-600" />}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    You can get a free API key from{' '}
-                    <a 
-                      href="https://makersuite.google.com/app/apikey" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      Google AI Studio
-                    </a>
-                  </p>
-                </div>
-
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -250,7 +196,7 @@ const SetupModal = ({ isOpen, onComplete }) => {
                 Skip for now
               </button>
               <button
-                onClick={handleSave}
+                onClick={onComplete}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Complete Setup

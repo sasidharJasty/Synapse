@@ -186,7 +186,6 @@ const Settings = () => {
 
   const tabs = [
     { id: 'general', label: 'General', icon: SettingsIcon },
-    { id: 'api', label: 'API Keys', icon: Key },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -317,101 +316,6 @@ const Settings = () => {
                           }`}
                         />
                       </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* API Keys */}
-            {activeTab === 'api' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-sage-800)' }}>
-                    API Configuration
-                  </h2>
-                  
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-sage-50)' }}>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium" style={{ color: 'var(--color-sage-800)' }}>
-                          Gemini API Key
-                        </h3>
-                        <button
-                          onClick={openGeminiInstructions}
-                          className="flex items-center gap-1 text-sm px-3 py-1 rounded-lg transition-colors"
-                          style={{ 
-                            backgroundColor: 'var(--color-synapse-100)',
-                            color: 'var(--color-synapse-700)'
-                          }}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          Get Key
-                        </button>
-                      </div>
-                      
-                      <p className="text-sm mb-4" style={{ color: 'var(--color-sage-600)' }}>
-                        Your Gemini API key is required for AI-powered features like smart task organization, 
-                        flashcard generation, and voice assistance.
-                      </p>
-                      
-                      <div className="space-y-3">
-                        <div className="relative">
-                          <input
-                            type={showGeminiKey ? 'text' : 'password'}
-                            value={geminiApiKey}
-                            onChange={(e) => { setGeminiApiKey(e.target.value); setApiKeyTested(null); }}
-                            placeholder="Enter your Gemini API key"
-                            className="w-full p-3 pr-20 rounded-xl border transition-colors focus:outline-none focus:ring-2"
-                            style={{
-                              borderColor: 'var(--color-sage-200)',
-                              focusRingColor: 'var(--color-synapse-500)'
-                            }}
-                          />
-                          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                            <button
-                              onClick={() => setShowGeminiKey(!showGeminiKey)}
-                              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                              style={{ color: 'var(--color-sage-600)' }}
-                            >
-                              {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                            {geminiApiKey && (
-                              <button
-                                onClick={handleCopyKey}
-                                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                                style={{ color: 'var(--color-sage-600)' }}
-                              >
-                                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 mt-2">
-                          <button
-                            type="button"
-                            onClick={testApiKey}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                            disabled={isTestingApiKey || !geminiApiKey}
-                          >
-                            {isTestingApiKey ? 'Testing...' : 'Test API Key'}
-                          </button>
-                          {apiKeyTested === true && <Check className="w-5 h-5 text-green-600" />}
-                          {apiKeyTested === false && <EyeOff className="w-5 h-5 text-red-600" />}
-                        </div>
-                        
-                        <button
-                          onClick={handleSaveGeminiKey}
-                          className="w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 hover:scale-105"
-                          style={{
-                            backgroundColor: 'var(--color-synapse-500)',
-                            color: 'white'
-                          }}
-                        >
-                          Save API Key
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -645,7 +549,7 @@ const Settings = () => {
                         Getting Started
                       </h3>
                       <p className="text-sm" style={{ color: 'var(--color-sage-600)' }}>
-                        1. Set up your Gemini API key in the API Keys section<br/>
+                        1. The Gemini API key is managed by your app administrator in the .env file<br/>
                         2. Configure your profile and preferences<br/>
                         3. Start using the AI-powered features
                       </p>
