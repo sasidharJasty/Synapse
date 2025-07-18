@@ -18,10 +18,14 @@ export class GeminiService {
   static async generateFlashcards(topic) {
     try {
       const ai = this.getModel();
-      
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Generate flashcards for the topic '${topic}'.`,
+        contents: `You are an expert educator and memory coach. Your task is to create highly effective, clear, and accurate flashcards for the topic: '${topic}'.
+- Each flashcard should focus on a single key concept, fact, or question relevant to the topic.
+- Use simple, student-friendly language and avoid ambiguity.
+- Include a concise summary of the topic.
+- Also generate a quiz question with 3-5 options, the correct answer, and a brief explanation.
+- Output must be in JSON with fields: summary, flashcards (array of {question, answer}), and quiz (question, options, correct, explanation).`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -69,12 +73,14 @@ export class GeminiService {
       const ai = this.getModel();
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Create a daily study schedule for the following goals: ${goals.join(', ')}. The user mood is ${mood}/10 and energy level is ${energyLevel}/10. 
-- If the total estimated time for all tasks exceeds 6 hours, split the tasks over multiple days, aiming for no more than 6 hours of study per day.
+        contents: `You are an expert productivity coach and study planner. Create a detailed, personalized daily study schedule for a student with the following goals: ${goals.join(', ')}.
+- The user's current mood is ${mood}/10 and energy level is ${energyLevel}/10.
+- If the total estimated time for all tasks exceeds 6 hours, intelligently split the tasks over multiple days, aiming for no more than 6 hours of study per day.
 - Include at least one meditation session and several short breaks (5-10 minutes) between study blocks each day.
-- For each scheduled item, specify the time, activity, duration (in minutes), intensity (low/medium/high), and a mood_adjustment tip.
+- For each scheduled item, specify the time, activity, duration (in minutes), intensity (low/medium/high), and a mood_adjustment tip tailored to the activity and the user's mood/energy.
 - Meditation and breaks should be clearly labeled as such in the activity field.
-Return the schedule as an array, and also provide recommendations and a motivational quote.`,
+- Provide actionable recommendations for optimizing study habits and a motivational quote.
+- Output must be in JSON with fields: schedule (array), recommendations (array), motivational_quote (string).`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -114,10 +120,12 @@ Return the schedule as an array, and also provide recommendations and a motivati
   static async breakdownGoal(goal) {
     try {
       const ai = this.getModel();
-      
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Break down the goal "${goal}" into 5 actionable daily tasks.`,
+        contents: `You are an expert goal-setting coach. Break down the goal: "${goal}" into 5 actionable, specific daily tasks.
+- Each task should have a clear title, a detailed description, an estimated time (in minutes), and a priority (high/medium/low).
+- Include a motivational quote and the total estimated time for all tasks.
+- Output must be in JSON with fields: tasks (array), motivational_quote (string), total_estimated_time (integer).`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -153,10 +161,14 @@ Return the schedule as an array, and also provide recommendations and a motivati
   static async analyzeMood(moodScore, moodDescription) {
     try {
       const ai = this.getModel();
-      
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Based on mood score ${moodScore}/10 and description "${moodDescription}", provide study suggestions.`,
+        contents: `You are an expert in psychology and student well-being. Based on the user's mood score (${moodScore}/10) and description ("${moodDescription}"), provide:
+- A personalized study suggestion
+- An intensity adjustment (should the user work harder, take it easy, or maintain pace?)
+- A motivational message
+- 3-5 recommended activities for the user's current state
+- Output must be in JSON with fields: study_suggestion, intensity_adjustment, motivational_message, recommended_activities (array).`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -184,10 +196,15 @@ Return the schedule as an array, and also provide recommendations and a motivati
   static async enhanceLecture(lectureText) {
     try {
       const ai = this.getModel();
-      
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Analyze this lecture text and provide a summary, key points, clarifying questions, and a concept map. Lecture text: ${lectureText}`,
+        contents: `You are an expert academic assistant. Analyze the following lecture text and provide:
+- A concise summary
+- A list of the most important key points
+- 3-5 clarifying questions a student might have
+- A concept map with the main concept and sub-concepts
+Lecture text: ${lectureText}
+- Output must be in JSON with fields: summary, key_points (array), clarifying_questions (array), concept_map (object with main_concept and sub_concepts).`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -228,17 +245,16 @@ Return the schedule as an array, and also provide recommendations and a motivati
   static async generateGreeting(userName) {
     try {
       const ai = this.getModel();
-      
       const timeOfDay = new Date().getHours();
       let timeGreeting = '';
-      
       if (timeOfDay < 12) timeGreeting = 'Good morning';
       else if (timeOfDay < 17) timeGreeting = 'Good afternoon';
       else timeGreeting = 'Good evening';
-
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Generate a personalized greeting for ${userName || 'Student'}. Time of day: ${timeGreeting}. Return a friendly, motivational greeting that encourages studying and learning. Keep it under 100 characters.`,
+        contents: `You are an expert motivational coach. Generate a personalized, friendly, and motivational greeting for ${userName || 'Student'}.
+- Time of day: ${timeGreeting}.
+- The greeting should encourage studying and learning, and be under 100 characters.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -264,10 +280,11 @@ Return the schedule as an array, and also provide recommendations and a motivati
   static async generateIcebreaker(subject, userStrengths) {
     try {
       const ai = this.getModel();
-      
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Generate an icebreaker message for a study partner based on subject: ${subject} and user strengths: ${userStrengths.join(', ')}. Return a friendly, engaging message to start a conversation.`,
+        contents: `You are an expert in social connection and student engagement. Write a friendly, creative, and engaging icebreaker message for a study partner.
+- Base it on the subject: ${subject} and the user's strengths: ${userStrengths.join(', ')}.
+- The message should be positive, inviting, and spark a conversation.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -285,20 +302,15 @@ Return the schedule as an array, and also provide recommendations and a motivati
   static async processVoiceCommand(command) {
     try {
       const ai = this.getModel();
-      
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Process this voice command and return a structured response. Analyze the command and determine the user's intent and appropriate action.
-
-Command: "${command}"
-
-Instructions:
-- Determine the intent: mood, goals, planner, flashcards, motivation, or general
-- Choose the appropriate action: add_task, add_goal, check_schedule, analyze_mood, generate_flashcards, unknown, or error
-- Provide a helpful response that acknowledges the command
-- Extract any relevant parameters like title, description, priority, or due_date if mentioned
-
-Return a JSON response with the specified structure.`,
+        contents: `You are an expert AI voice assistant for students. Process the following voice command and return a structured response.
+- Analyze the command and determine the user's intent and the most appropriate action for a study assistant.
+- Extract any relevant parameters (title, description, priority, due_date, etc.).
+- Provide a helpful, natural-sounding response that acknowledges the command and offers next steps.
+- Use the following possible intents: mood, goals, planner, flashcards, motivation, general.
+- Use the following possible actions: add_task, add_goal, check_schedule, analyze_mood, generate_flashcards, unknown, error.
+- Output must be in JSON with fields: intent, action, parameters (object), response (string). Command: "${command}"`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -353,10 +365,10 @@ Return a JSON response with the specified structure.`,
   static async organizeTasks(prompt) {
     try {
       const ai = this.getModel();
-      
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: prompt,
+        contents: `You are an expert productivity assistant. Organize the following student tasks for optimal productivity, focus, and well-being. Use best practices in time management and student success. ${prompt}
+- Output must be in JSON with fields: organized_tasks (array of {title, start_time, reasoning}), recommendations (array), motivational_quote (string).`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -448,7 +460,11 @@ Return a JSON response with the specified structure.`,
       const ai = this.getModel();
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Given the following lecture text, answer the user's question as accurately as possible.\nLecture: ${lectureText}\nQuestion: ${question}`,
+        contents: `You are an expert academic tutor. Given the following lecture text, answer the user's question as accurately and thoroughly as possible.
+- Provide a clear, concise answer, a list of supporting points from the lecture, and a confidence score (0-1).
+Lecture: ${lectureText}
+Question: ${question}
+- Output must be in JSON with fields: answer (string), supporting_points (array), confidence (number).`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
