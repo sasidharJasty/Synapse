@@ -1,6 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 
 export class GeminiService {
+  // Add static property to store conversation history
+  static conversationHistory = [];
+
   static getApiKey() {
     return localStorage.getItem('gemini-api-key') || import.meta.env.VITE_GEMINI_API_KEY;
   }
@@ -299,9 +302,19 @@ Lecture text: ${lectureText}
     }
   }
 
-  static async processVoiceCommand(command) {
+  static async processVoiceCommand(command, includeHistory = true) {
     try {
       const ai = this.getModel();
+      
+      // Build conversation context
+      let conversationContext = '';
+      if (includeHistory && this.conversationHistory.length > 0) {
+        conversationContext = '\n\nPrevious conversation context:\n' + 
+          this.conversationHistory.map(entry => 
+            `User: ${entry.command}\nAssistant: ${entry.response}`
+          ).join('\n') + '\n\n';
+      }
+
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: `You are an expert AI voice assistant for students. Process the following voice command and return a structured response.
@@ -310,7 +323,8 @@ Lecture text: ${lectureText}
 - Provide a helpful, natural-sounding response that acknowledges the command and offers next steps.
 - Use the following possible intents: mood, goals, planner, flashcards, motivation, general.
 - Use the following possible actions: add_task, add_goal, check_schedule, analyze_mood, generate_flashcards, unknown, error.
-- Output must be in JSON with fields: intent, action, parameters (object), response (string). Command: "${command}"`,
+- Consider the conversation history to provide contextual responses.${conversationContext}Current command: "${command}"
+- Output must be in JSON with fields: intent, action, parameters (object), response (string).`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -350,16 +364,56 @@ Lecture text: ${lectureText}
         response: parsedResult.response || "I understand your request. How can I help you further?"
       };
       
+      // Add to conversation history
+      this.addToConversationHistory(command, validatedResult.response);
+      
       return validatedResult;
     } catch (error) {
       console.error('Error processing voice command:', error);
-      return {
+      const errorResponse = {
         intent: "general",
         action: "error",
         parameters: {},
         response: "Sorry, I couldn't process your command. Please try again."
       };
+      
+      // Add error to conversation history
+      this.addToConversationHistory(command, errorResponse.response);
+      
+      return errorResponse;
     }
+  }
+
+  // Add method to manage conversation history
+  static addToConversationHistory(command, response) {
+    this.conversationHistory.push({
+      timestamp: new Date().toISOString(),
+      command: command,
+      response: response
+    });
+    
+    // Keep only the last 10 exchanges to prevent context overflow
+    if (this.conversationHistory.length > 10) {
+      this.conversationHistory = this.conversationHistory.slice(-10);
+    }
+  }
+
+  // Add method to clear conversation history
+  static clearConversationHistory() {
+    this.conversationHistory = [];
+  }
+
+  // Add method to get conversation history
+  static getConversationHistory() {
+    return [...this.conversationHistory];
+  }
+
+  // Add method to export conversation history
+  static exportConversationHistory() {
+    return {
+      timestamp: new Date().toISOString(),
+      conversation: this.conversationHistory
+    };
   }
 
   static async organizeTasks(prompt) {
@@ -487,4 +541,4 @@ Question: ${question}
       return { answer: 'Error generating answer.', supporting_points: [], confidence: 0 };
     }
   }
-} 
+}
